@@ -1,0 +1,42 @@
+#! python3
+# getOpenWeather.py - Prints the weather for a location from the command line.
+
+APPID = 'e5131b766187bc1c009d773ac2ce36f1'
+
+import sys, json, requests
+
+# Compute location from command line arguments.
+if len(sys.argv) < 2:
+ print('Usage: getOpenWeather.py city_name, 2-letter_country_code')
+ sys.exit()
+#location = ' '.join(sys.argv[1:])
+#location = ' '.join(sys.argv[1:])
+location = ' '.join(sys.argv[1:])
+
+# Download the JSON data from OpenWeatherMap.org's API.
+url ='https://api.openweathermap.org/data/2.5/weather?q=%s&APPID=%s' % (location,
+APPID)
+response = requests.get(url)
+response.raise_for_status()
+
+# Uncomment to see the raw JSON text:
+#print(response.text)
+
+# Load JSON data into a Python variable.
+weatherData = json.loads(response.text)
+
+
+ # Print weather descriptions.
+w = weatherData['main']
+
+# Change kelvin to Fahrenheit
+
+def KtoF(kelvin):
+ F = 1.8*(kelvin - 273) + 32
+ return F
+
+#Print the results
+print(f'The weather in {location} is currently:')
+T = (KtoF(w['temp']))
+print(round(T,1), 'degrees F')
+print(f'description is', weatherData['weather'][0]['description'])

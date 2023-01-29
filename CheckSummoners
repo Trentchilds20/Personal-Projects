@@ -1,0 +1,83 @@
+#! python3
+
+#league.py is a script that checks the summoners in the current game the player is in and sees if any of those players were in 
+# the last several games that the selected summoner has played. 
+
+import requests, json, sys
+
+APIKEY = 'RGAPI-753c7076-5711-4a9a-8ee5-9c80fc7fbf0e'
+
+#get json data from riot api for the given summoner name
+CurrentSummoner = input('What summoner are we looking at? ')
+
+
+FirstURL = f'https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{CurrentSummoner}?api_key={APIKEY}'
+response = requests.get(FirstURL)
+response.raise_for_status()
+SummonerData = json.loads(response.text)
+ID = SummonerData['id']
+PUUID = SummonerData['puuid']
+
+
+#extract sumoner names from current match
+SecondURL = f'https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{ID}?api_key={APIKEY}'
+response = requests.get(SecondURL)
+response.raise_for_status()
+MatchData = json.loads(response.text)
+names = []
+for i in range(len(MatchData['participants'])):
+    names.append(MatchData['participants'][i]['summonerName'])
+
+
+#turn the list of names into PUUID names
+currentpuuid = []
+for j in names:
+    anotherurl = f'https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{j}?api_key={APIKEY}'
+    anotherfetch = requests.get(anotherurl)
+    anotherfetch.raise_for_status()
+    Currentpeople = json.loads(anotherfetch.text)
+    currentpuuid.append(Currentpeople['puuid'])
+
+
+#get summoner names from last 20 games
+ThirdURL = f'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{PUUID}/ids?start=0&count=5&api_key={APIKEY}'
+response = requests.get(ThirdURL)
+response.raise_for_status()
+GamesData = json.loads(response.text)
+AllNames = []
+for game in GamesData:
+    NewURL = f'https://americas.api.riotgames.com/lol/match/v5/matches/{game}?api_key={APIKEY}'
+    newresponse = requests.get(NewURL)
+    MatchData = json.loads(newresponse.text)
+    for person in MatchData['metadata']['participants']:
+        AllNames.append(person)
+
+
+#compare the lists
+inbothlists = []
+for k in currentpuuid:
+    if k == PUUID:
+        continue
+    elif k in AllNames:
+        inbothlists.append(k)
+
+
+#turn the puuid back into summoner name
+finallist = []
+for p in inbothlists:
+    justanotherurl = f'https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{p}?api_key={APIKEY}'
+    anotherresponse = requests.get(justanotherurl)
+    FinalNames = json.loads(anotherresponse.text)
+    finallist.append(FinalNames['name'])
+
+
+#print the results
+if len(finallist) == 0:
+    print('There are all new summoners in your current game.')
+else:
+    print('People in this game you have played with in the last 5 games are:')
+    for x in finallist:
+        print(x)
+
+
+

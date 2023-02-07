@@ -1,0 +1,234 @@
+#! python3
+# chopsticks.py
+
+import time, random, sys
+
+print('The game is played with each player starting with 2 hands with one finger raised on each.\n'
+      'Taking turns each player attacks one of the opponents hands with one of their own. The number of\n'
+      'fingers they are holding gets added to the opponents hand. If a hand reaches 5 fingers then it is no\n'
+      'longer playable. If one hand is out, and the other hand has 4 or 2 fingers raised, they can split the \n'
+      'count in half to the other hand so 4 in one hand would become 2 in each hand. The first person to lose both\n'
+      'hands loses.\n')
+
+# print the current state of the hands
+def printstate(q, w, o, p):
+    print(f'   -----      -----\n'
+          f'   | {q} |      | {w} |\n'
+          f'   -----      -----\n'
+          '\n'
+          '\n'
+          f'   -----      -----\n'
+          f'   | {o} |      | {p} |\n'
+          f'   -----      -----\n')
+
+# get the players attack and add new fingers
+def GetAttackToUpdateState(opL, opR, seL, seR):
+
+    while True:
+        if seL == 0:
+            WithHand = 'R'
+        if seR == 0:
+            WithHand = 'L'
+        if seR != 0 and seL != 0:
+            WithHand = input('Which hand are you attacking with? (L or R) ').upper()
+        if WithHand in ['L', 'R']:
+            break
+    while True:
+        WhereAttack = input('Which hand are you attacking? (L or R) ').upper()
+        if (WhereAttack == 'L' and opL == 0) or (WhereAttack == 'R' and opR == 0):
+            print("You can't attack zero fingers!")
+        if (WhereAttack == 'L' and opL != 0) or (WhereAttack == 'R' and opR != 0):
+            break
+
+    if WithHand == 'L':
+        if WhereAttack == 'L':
+            opL += seL
+        if WhereAttack == 'R':
+            opR += seL
+    if WithHand == 'R':
+        if WhereAttack == 'L':
+            opL += seR
+        if WhereAttack == 'R':
+            opR += seR
+    if opR > 5:
+        opR -= 5
+    if opL > 5:
+        opL -= 5
+
+    return opL, opR
+
+# get the bot to move
+def getopponentmove(opL, opR, seL, seR):
+
+    # check for moves to win
+    if opR + seR == 5 or opR + seL == 5 or opL + seL == 5 or opL + seR == 5:
+        if opR + seR == 5:
+            attackwith = 2
+            attackto = 2
+        if opR + seL == 5:
+            attackwith = 2
+            attackto = 1
+        if opL + seL == 5:
+            attackwith = 1
+            attackto = 1
+        if opL + seR == 5:
+            attackwith = 1
+            attackto = 2
+
+    # if no move to win then random
+    else:
+        if opL != 0 and opR != 0:
+            attackwith = random.randint(1, 2)
+            if seL != 0 and seR != 0:
+                attackto = random.randint(1, 2)
+            if seL == 0:
+                attackto = 2
+            if seR == 0:
+                attackto = 1
+        if opL == 0:
+            attackwith = 2
+            if seL != 0 and seR != 0:
+                attackto = random.randint(1, 2)
+            if seL == 0:
+                attackto = 2
+            if seR == 0:
+                attackto = 1
+        if opR == 0:
+            attackwith = 1
+            if seL != 0 and seR != 0:
+                attackto = random.randint(1, 2)
+            if seL == 0:
+                attackto = 2
+            if seR == 0:
+                attackto = 1
+
+    # add up responses
+    if attackwith == 1 and opL != 0:
+        if attackto == 1:
+            seL += opL
+        if attackto == 2:
+            seR += opL
+    if attackwith == 2 and opR != 0:
+        if attackto == 1:
+            seL += opR
+        if attackto == 2:
+            seR += opR
+
+    # make sure fingers aren't over 5
+    if seL > 5:
+        seL -= 5
+    if seR > 5:
+        seR -= 5
+    return seL, seR
+
+# current state of hands
+while True:
+    oppL = 1
+    oppR = 1
+    selfL = 1
+    selfR = 1
+
+    # main loop of the game
+    while True:
+
+        # see if hands are 5 for self
+        if selfL == 5:
+            selfL = 0
+        if selfR == 5:
+            selfR = 0
+        if selfR == 0 and selfL == 0:
+            print('You lost!')
+            break
+
+        # print board
+        printstate(oppL, oppR, selfL, selfR)
+
+        # see if hands are 0 and 2/4
+        if (selfL == 0 and selfR == 4) or (selfL == 4 and selfR == 0) or (selfL == 0 and selfR == 2) or (selfL == 2 and selfR == 0):
+            # ask to split
+            while True:
+                choice = input('Would you like to split your hand? (y/n) ').lower()
+                if choice == 'n':
+                    break
+                if choice == 'y':
+                    if selfL == 0 and selfR == 4:
+                        selfL = 2
+                        selfR = 2
+                    if selfL == 4 and selfR == 0:
+                        selfL = 2
+                        selfR = 2
+                    if selfL == 0 and selfR == 2:
+                        selfL = 1
+                        selfR = 1
+                    if selfL == 2 and selfR == 0:
+                        selfL = 1
+                        selfR = 1
+                    break
+            # if hands split then reprint the board
+            printstate(oppL, oppR, selfL, selfR)
+
+        # ask for player attack and update state
+        (oppL, oppR) = GetAttackToUpdateState(oppL, oppR, selfL, selfR)
+
+        # check if hands are 5 for opponent
+        if oppL == 5:
+            oppL = 0
+        if oppR == 5:
+            oppR = 0
+        if oppR == 0 and oppL == 0:
+            print('You won!')
+            break
+
+        # check if opponents hands can be split
+        if (oppL == 0 and oppR == 4) or (oppL == 4 and oppR == 0) or (oppL == 0 and oppR == 2) or (oppL == 2 and oppR == 0):
+
+            if (oppL + selfR != 5) and (oppL + selfL != 5) and (oppR + selfL != 5) and (oppR + selfR != 5):
+                # print the board before the opponent splits
+                printstate(oppL, oppR, selfL, selfR)
+                # always split since having both hands will almost give more options to win unless it can when in the next move
+                if oppL == 0 and oppR == 4:
+                    oppL = 2
+                    oppR = 2
+                if oppL == 4 and oppR == 0:
+                    oppL = 2
+                    oppR = 2
+                if oppL == 0 and oppR == 2:
+                    oppL = 1
+                    oppR = 1
+                if oppL == 2 and oppR == 0:
+                    oppL = 1
+                    oppR = 1
+                print('The opponent will split in 3 seconds... ', end='')
+                for second in range(1,4):
+                    if second == 3:
+                        print(3)
+                        break
+                    print(second, end='')
+                    time.sleep(1)
+
+        # pause to show new board for 5 seconds
+        printstate(oppL, oppR, selfL, selfR)
+        print('Opponent is moving in 5 seconds... ', end='')
+        for second in range(1,6):
+            if second == 5:
+                print(5)
+                break
+            print(second, end='')
+            time.sleep(1)
+
+        # let opponent attack and update state
+        (selfL, selfR) = getopponentmove(oppL, oppR, selfL, selfR)
+
+    answer = input('Do you want to play again? (y/n) ').lower()
+    if answer == 'y':
+        continue
+    if answer == 'n':
+        sys.exit()
+
+
+    # printstate(oppL, oppR, selfL, selfR)
+
+
+
+
+

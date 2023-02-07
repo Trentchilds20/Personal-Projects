@@ -5,7 +5,7 @@
 
 import requests, json, sys
 
-APIKEY = 'RGAPI-753c7076-5711-4a9a-8ee5-9c80fc7fbf0e'
+APIKEY = 'insertKeyHere'
 
 #get json data from riot api for the given summoner name
 CurrentSummoner = input('What summoner are we looking at? ')
